@@ -255,6 +255,10 @@
       <input id="results-slider" type="range" min="1" max="50" step="1" value="10" />
       <button id="render-btn">Render</button>
       <button id="theme-toggle" class="theme-toggle">Light mode</button>
+      <label for="enable-ankama">
+        <input type="checkbox" id="enable-ankama" />
+        Enable Ankama Renderer
+      </label>
     </div>
     
     <div id="npc-info"></div>
@@ -305,6 +309,7 @@
     const npcInfo = document.getElementById('npc-info');
     const searchModeLook = document.getElementById('search-mode-look');
     const searchModeName = document.getElementById('search-mode-name');
+    const enableAnkamaCheckbox = document.getElementById('enable-ankama');
     
     let darkMode = true;
 
@@ -380,16 +385,23 @@
       }
     }
 
-    // Show rendered images
+    // Show rendered images (modified to respect Ankama renderer setting)
     function showImages(hex, size) {
-      const ankamaUrl = `https://staticns.ankama.com/dofus/renderer/look/${hex}/full/1/${size}_${size}-0.png`;
       const dofusdbUrl = `https://renderer.dofusdb.fr/look/${hex}/full/1/${size}_${size}.png`;
-      
-      ankamaImg.src = ankamaUrl;
-      ankamaImg.style.display = 'block';
-      ankamaLink.href = ankamaUrl;
-      ankamaLink.style.display = 'block';
-      
+
+      // Ankama renderer logic
+      if (enableAnkamaCheckbox.checked) {
+        const ankamaUrl = `https://staticns.ankama.com/dofus/renderer/look/${hex}/full/1/${size}_${size}-0.png`;
+        ankamaImg.src = ankamaUrl;
+        ankamaImg.style.display = 'block';
+        ankamaLink.href = ankamaUrl;
+        ankamaLink.style.display = 'block';
+      } else {
+        ankamaImg.style.display = 'none';
+        ankamaLink.style.display = 'none';
+      }
+
+      // DofusDB renderer logic
       dofusdbImg.src = dofusdbUrl;
       dofusdbImg.style.display = 'block';
       dofusdbImg.style.width = size + 'px';
@@ -412,13 +424,17 @@
         const resultsLimit = parseInt(resultsSlider.value);
         let url;
         if (searchType === 'look') {
-          url = `https://api.dofusdb.fr/npcs?look=${encodeURIComponent(query)}&$limit=${resultsLimit}`;
+          url = `https://api.beta.dofusdb.fr/npcs?look=${encodeURIComponent(query)}&$limit=${resultsLimit}`;
         } else {
           const selectedLanguage = languageSelect.value;
-          url = `https://api.dofusdb.fr/npcs?name.${selectedLanguage}[$regex]=${encodeURIComponent(query)}&$limit=${resultsLimit}`;
+          url = `https://api.beta.dofusdb.fr/npcs?name.${selectedLanguage}[$regex]=${encodeURIComponent(query)}&$limit=${resultsLimit}`;
         }
 
-        const response = await fetch(url);
+        const response = await fetch(url, {
+          headers: {
+            'Referer': 'https://nelsonjq.github.io/npc-d3-look-display/'
+          }
+        });
         
         if (!response.ok) {
           throw new Error(`API request failed: ${response.status}`);
@@ -444,10 +460,10 @@
       try {
         let url;
         if (searchType === 'look') {
-          url = `https://api.dofusdb.fr/npcs?look=${encodeURIComponent(query)}&$limit=1`;
+          url = `https://api.beta.dofusdb.fr/npcs?look=${encodeURIComponent(query)}&$limit=1`;
         } else {
           const selectedLanguage = languageSelect.value;
-          url = `https://api.dofusdb.fr/npcs?name.${selectedLanguage}[$regex]=${encodeURIComponent(query)}&$limit=1`;
+          url = `https://api.beta.dofusdb.fr/npcs?name.${selectedLanguage}[$regex]=${encodeURIComponent(query)}&$limit=1`;
         }
 
         const response = await fetch(url);
@@ -476,7 +492,7 @@
       const gender = npc.gender ?? 2;
       const color = genderColors[gender] || '#aaa';
       const label = genderLabels[gender] || 'Unknown';
-      
+
       let names = '';
       if (npc.name && typeof npc.name === 'object') {
         names = Object.entries(npc.name)
@@ -484,7 +500,7 @@
           .map(([lang, val]) => `<span class="name-lang">${lang}: ${val}</span>`)
           .join(' ');
       }
-      
+
       // Generate image URLs if look exists
       let imagesHtml = '';
       if (npc.look) {
@@ -492,11 +508,11 @@
         const imageSize = 80; // Fixed small size for result thumbnails
         const ankamaUrl = `https://staticns.ankama.com/dofus/renderer/look/${hex}/full/1/${imageSize}_${imageSize}-0.png`;
         const dofusdbUrl = `https://renderer.dofusdb.fr/look/${hex}/full/1/${imageSize}_${imageSize}.png`;
-        
+
         imagesHtml = `
           <div class="npc-images">
             <div class="npc-img-block">
-              <img src="${ankamaUrl}" alt="Ankama" onerror="this.style.display='none'">
+              <img src="${ankamaUrl}" alt="Ankama" onerror="this.style.display='none'" style="display: ${enableAnkamaCheckbox.checked ? 'block' : 'none'};">
               <span>Ankama</span>
             </div>
             <div class="npc-img-block">
@@ -508,7 +524,7 @@
       } else {
         imagesHtml = '<div class="npc-images"><em style="opacity:0.6;">No look data</em></div>';
       }
-      
+
       return `
         <div class="npc-result" onclick="selectNpcForRender('${npc.look || ''}', ${npc.id})" data-npc-id="${npc.id}">
           <div class="npc-info-section">
