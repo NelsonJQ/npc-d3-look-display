@@ -391,7 +391,7 @@
 
       // Ankama renderer logic
       if (enableAnkamaCheckbox.checked) {
-        const ankamaUrl = `https://staticns.ankama.com/dofus/renderer/look/${hex}/full/1/${size}_${size}-0.png`;
+        const ankamaUrl = `https://staticns.ankama.com/dofus/renderer/look/${hex}/face/1/${size}_${size}-0.png`;
         ankamaImg.src = ankamaUrl;
         ankamaImg.style.display = 'block';
         ankamaLink.href = ankamaUrl;
@@ -506,7 +506,7 @@
       if (npc.look) {
         const hex = toAnkamaHex(npc.look);
         const imageSize = 80; // Fixed small size for result thumbnails
-        const ankamaUrl = `https://staticns.ankama.com/dofus/renderer/look/${hex}/full/1/${imageSize}_${imageSize}-0.png`;
+        const ankamaUrl = `https://staticns.ankama.com/dofus/renderer/look/${hex}/face/1/${imageSize}_${imageSize}-0.png`;
         const dofusdbUrl = `https://renderer.dofusdb.fr/look/${hex}/full/1/${imageSize}_${imageSize}.png`;
 
         imagesHtml = `
